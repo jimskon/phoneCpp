@@ -41,6 +41,7 @@ private:
     const string pass=PASS;
     sql::Driver* driver;
     sql::Properties properties;
+    std::unique_ptr<sql::Connection> conn;
 
 };
 

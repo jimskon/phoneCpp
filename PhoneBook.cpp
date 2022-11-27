@@ -15,29 +15,37 @@ PhoneBook::PhoneBook() {
   	// ``jdbc:mariadb://host:port/database``.
   	sql::SQLString url(db_url);
 
+    // Use a properties map for the other connection options
+  	sql::Properties my_properties({{"user", user}, {"password",pass}});
+  	// Save properties in object
+  	properties = my_properties;
+
+    // Establish Connection
+  	std::unique_ptr<sql::Connection> my_conn(driver->connect(db_url, properties));
+    
+    // Check success
+    if (!my_conn) {
+   		cerr << "Invalid database connection" << endl;
+   		exit (EXIT_FAILURE);
+   	}	
+   	
+   	// Save connection in object
+   	conn = std::move(my_conn);
+   	
 }
 
 
 vector<PhoneEntry> PhoneBook::findByLast(string last) {
 
-	cout << "Find:" << last << endl;
-
-    vector<PhoneEntry> list;
+vector<PhoneEntry> list;
     
-    // Use a properties map for the other connection options
-  	sql::Properties properties({{"user", user}, {"password",pass}});
-
-    // Establish Connection
-  	std::unique_ptr<sql::Connection>  conn(driver->connect(db_url, properties));
-    
+    // Make sure the connection is still valid
     if (!conn) {
    		cerr << "Invalid database connection" << endl;
    		exit (EXIT_FAILURE);
-   	}
- 	cout << "Start1! " << endl;  	
+   	}	
     // Create a new Statement
 	std::unique_ptr<sql::Statement> stmnt(conn->createStatement());
-	cout << "Start2! " << endl;
     
     // Execute query
     sql::ResultSet *res = stmnt->executeQuery("SELECT * FROM PhoneBook WHERE Last like '%"+last+"%'");
