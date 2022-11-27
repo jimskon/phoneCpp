@@ -1,77 +1,65 @@
 // JavaScript for Phone Application Demo Program
 // Jim Skon, Kenyon College, 2017
-var operation;  // operation
 var editid;
+const baseUrl = 'http://3.134.78.249:5004';
 
 $(document).ready(function () {
     $('.editdata').hide();
     $("#search-btn").click(getMatches);
     $("#add-btn").click(addEntry);
-    operation = "Find Last";
+    $(".start-edit").click(startAdd);
+    $(".end-edit").click(endAdd);
     $("#clear").click(clearResults);
 
-    $(".dropdown-menu a").click(function(){
-	console.log("pick!"+$(this).text());
-	if ( $(this).hasClass("main-menu") ) {
-	    $(this).parents(".dropdown").find('.selection').text($(this).text());
-	    operation=$(this).text();
-	    console.log("Main-menu");
-	    changeOperation(operation);	    
-	} else if ($(this).hasClass("add-item")) {
-	    $(this).parents(".dropdown").find('.selection').text($(this).text());
-	    console.log($(this).text());
-	} else if ($(this).hasClass("edit-item")) {
-	    $(this).parents(".dropdown").find('.selection').text($(this).text());
-	    console.log($(this).text());
-	} 	
-    });
+	$(".dropdown-menu li a").click(function(){
+		var selection =$(this).text();
+		$(this).parents(".btn-group").find('.btn').html(selection+' <span class="caret"></span>');
+	});
+	
+	endAdd();
+
 });
 
-changeOperation(operation);
 
-function changeOperation(operation){
-    if(operation=="Add Entry"){
+function startAdd(){
 	console.log("Add Entry");
 	$('#addmessage').empty();
 	$('.inputdata').show();
 	$('.searchbox').hide();
 	$('.results').hide();
-	$('.editdata').hide();}
-    else{
-	console.log("not add entry");
+	$('.editdata').hide();
+	$('#searchresults').empty();
+}
+
+function endAdd() {
+	console.log("End add");
 	$('.editdata').hide();
 	$('.inputdata').hide();
 	$('.results').show();
 	$('.searchbox').show();
-    }    
+	$('#searchtype').html('Find Last'+' <span class="caret"></span>')
+   
 }
 
 // Build output table from comma delimited list
-function buildTable(list) {
-    var a = list.split(",");
-    if (a.length < 1) {
-	return "<h3>Internal Error</h3>";
-    } else if (a.length == 1) {
-	return "<h3>Nothing Found</h3>";
-    } else {
-	var result = '<table class="w3-table-all w3-hoverable" border="2"><tr><th>First</th><th>Last</th><th>Phone</th><th>Type</th><th>Action</th><tr>';
-	var aLen = a.length;
-	for (var i = 1; i < aLen; i+=5) {
-	    result += "<tr><td class='first'>"+a[i]+"</td><td class='last'>"+a[i+1]+"</td><td class='phone'>"+a[i+2]+"</td><td class='type'>"+a[i+3]+"</td>";
-	    result += "<td><button type='button' ID='"+a[i+4]+"' class='btn btn-primary btn-sm edit'>Edit</button> ";
-	    result += "<button type='button' ID='"+a[i+4]+"' class='btn btn-primary btn-sm delete'>Delete</button></td></tr>";
-	}
+function buildTable(json) {
+
+	var result = '<table class="table table-success table-striped""><tr><th>First</th><th>Last</th><th>Phone</th><th>Type</th><th>Action</th><tr>';
+	json.forEach(function (entry,i) {
+	    result += "<tr><td class='first'>"+entry['first']+"</td><td class='last'>"+entry['last']+"</td><td class='phone'>"+entry['phone']+"</td><td class='type'>"+entry['type']+"</td>";
+	    result += "<td><button type='button' ID='"+entry["ID"]+"' class='btn btn-primary btn-sm edit'>Edit</button> ";
+	    result += "<button type='button' ID='"+entry['ID']+"' class='btn btn-primary btn-sm delete'>Delete</button></td></tr>";
+	});
 	result += "</table>";
 	
 	return result;
-    }
 }
 
-function processEdit(){
-    console.log("edit data");
+function startEdit(){
+    console.log("start edit data");
     $('#searchresults').empty();
     $('.editdata').show();
-    $("#edit-btn").click(editEntry);
+    $("#edit-btn").click(editProcess);
     console.log("Edit Record: " + $(this).attr('ID'));
     var row=$(this).parents("tr");
     console.log("First name of record: "+ $(row).find('.first').text()+":"+$(row).find('.type').text());
@@ -81,40 +69,49 @@ function processEdit(){
     $('#editlast').val( $(row).find('.last').text());
     $('#editphone').val( $(row).find('.phone').text());
     $('#edittype').text( $(row).find('.type').text());
+    $('.editdata').show();
 }
 
 function editDone() {
     $('#editmessage').text($('#editfirst').val()+" "+$('#editlast').val()+ " SAVED");
 }
-function editEntry(){
+function editProcess(){
     console.log("Attempting to edit an entry");
     console.log("Firstname:" + $('#editfirst').val() + "ID:" + editid);
     $('#searchresults').empty();
-    $.ajax({
-	url: '/cgi-bin/skon_phoneAppComplete.cgi?editid='+editid +'&editfname='+$('#editfirst').val()+'&editlname='+$('#editlast').val()+'&editphone='+$('#editphone').val()+'&edittype='+$('#edittype').text()+'&operation=edit',
-	dataType: 'text',
-	success: editDone(),
-	error: function(){alert("Error: Something went wrong");}
-    });
+        fetch(baseUrl+'/phone/update/'+editid+'/'+$('#editfirst').val()+'/'+
+        $('#editlast').val()+'/'+$('#editphone').val()+'/'+$('#edittype').text(), {
+		method: 'get'
+    })
+	.then (editDone())
+	.catch(error => {
+	    {alert("Error: Edit - something went wrong:"+error);}
+	})
+
 }
 
 
 function processDelete(){
-    console.log("Attempting to delete an entry");
+    
     $('#searchresults').empty();
     var id=$(this).attr('ID');
-    $.ajax({
-	url: '/cgi-bin/skon_phoneAppComplete.cgi?deleteid='+$(this).attr('ID')+'&operation=delete',
-	dataType: 'text',
-	success: function(){alert("Deleted Record: " +id );},
-	error: function(){alert("Error: Something went wrong");}
-    });
+    console.log("Attempting to delete an entry:"+id);
+    fetch(baseUrl+'/phone/delete/'+id, {
+		method: 'get'
+    })
+	.then (alert("Deleted Record: " +id ))
+	.catch(error => {
+	    {alert("Error: Something went wrong:"+error);}
+	})
+	
 }
-function processResults(results) {
-    console.log("Results:"+results);
+function processFind(results) {
+
+	var phonelist = results["results"];
+    //console.log("Results:"+JSON.stringify(phonelist));
     $('#searchresults').empty();
-    $('#searchresults').append(buildTable(results));
-    $(".edit").click(processEdit);
+    $('#searchresults').append(buildTable(phonelist));
+    $(".edit").click(startEdit);
     $(".delete").click(processDelete);
 }
 
@@ -125,17 +122,25 @@ function clearResults() {
 function getMatches(){
     $('.editdata').hide();
     $('#searchresults').empty();
-    $.ajax({
-	url: '/cgi-bin/skon_phoneAppComplete.cgi?find='+$('#search').val()+'&operation='+operation,
-	dataType: 'text',
-	success: processResults,
-	error: function(){alert("Error: Something went wrong");}
-    });
+    var search = $('#search').val();
+    var selection = $('#searchtype').text().trim().split(" ");
+    var field = selection[1].toLowerCase();
+	// ignore if this is "add entry"
+	if (field == "entry") return
+	
+    fetch(baseUrl+'/phone/'+field+'/'+search, {
+		method: 'get'
+    })
+	.then (response => response.json() )
+    .then (json => processFind(json))
+	.catch(error => {
+	    {alert("Error: Something went wrong:"+error);}
+	})
 }
 
 function processAdd(results) {
     $('#addmessage').empty();
-    console.log("Add:",results);
+    console.log("Add:",results["status"]);
     $('#addmessage').text($('#addfirst').val()+" "+$('#addlast').val()+ " ADDED");
     $('#addfirst').val('');
     $('#addlast').val('');
@@ -147,13 +152,16 @@ function addEntry(){
     console.log("Attempting to add an entry");
     console.log("Firstname:" + $('#addfirst').val());
     $('#searchresults').empty();
-    $.ajax({
-	url: '/cgi-bin/skon_phoneAppComplete.cgi?afname='+$('#addfirst').val()+'&alname='+$('#addlast').val()+'&aphone='+$('#addphone').val()+'&atype='+$('#addtype').text()+'&operation='+operation,
-	dataType: 'text',
-	success: processAdd,
-	error: function(){alert("Error: Something went wrong");}
-    });
+    fetch(baseUrl+'/phone/add/'+$('#addfirst').val()+"/"+$('#addlast').val()+"/"+$('#addphone').val()+"/"+$('#addtype').text(), {
+		method: 'get'
+    })
+	.then (response => response.json() )
+    .then (json => processAdd(json))
+	.catch(error => {
+	    {alert("Error: Something went wrong:"+error);}
+	})
 }
+
 
 
     

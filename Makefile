@@ -13,7 +13,7 @@ CFLAGS= -std=c++14  -Wno-deprecated-declarations
 
 RM= /bin/rm -f
 
-all: TestPhoneBook phoneApp PutHTML PutCGI
+all: TestPhoneBook phoneApp PutHTML 
 
 PhoneEntry.o: PhoneEntry.cpp PhoneEntry.h
 	$(CC) -c $(CFLAGS) PhoneEntry.cpp
@@ -27,27 +27,20 @@ TestPhoneBook.o: TestPhoneBook.cpp PhoneEntry.h	PhoneBook.h
 TestPhoneBook: TestPhoneBook.o PhoneBook.o PhoneEntry.o
 	$(CC) TestPhoneBook.o PhoneBook.o PhoneEntry.o -L/usr/lib -o TestPhoneBook -L/usr/local/lib -lmariadbcpp
 
-phoneApp.o: phoneApp.cpp
+phoneApp.o: phoneApp.cpp httplib.h
 	$(CC) -c $(CFLAGS) phoneApp.cpp
 
-phoneApp: phoneApp.o PhoneBook.o PhoneEntry.o
+phoneApp: phoneApp.o PhoneBook.o PhoneEntry.o 
 	$(CC) phoneApp.o PhoneBook.o PhoneEntry.o -o phoneApp -L/usr/local/lib -lmariadbcpp
 
-PutCGI: phoneApp
-	chmod 757 phoneApp
-	cp phoneApp /usr/lib/cgi-bin/$(USER)_phoneAppComplete.cgi
-
-	echo "Current contents of your cgi-bin directory: "
-	ls -l /usr/lib/cgi-bin/
-
 PutHTML:
-	cp phoneApp.html /var/www/html/class/ssd/$(USER)/PhoneAppComplete
-	cp phoneApp.js /var/www/html/class/ssd/$(USER)/PhoneAppComplete
-	cp phoneApp.css /var/www/html/class/ssd/$(USER)/PhoneAppComplete
+	cp phoneApp.html /var/www/html/phoneCpp/
+	cp phoneApp.js /var/www/html/phoneCpp/
+	cp phoneApp.css /var/www/html/phoneCpp/
 
 
 	echo "Current contents of your HTML directory: "
-	ls -l /var/www/html/class/ssd/$(USER)/PhoneAppComplete
+	ls -l /var/www/html/phoneCpp
 
 clean:
 	rm -f *.o  phoneApp TestPhoneBook

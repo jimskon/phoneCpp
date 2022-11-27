@@ -8,138 +8,106 @@
 #include <string>
 #include <map>
 
-// Stuff for AJAX
-#include "cgicc/Cgicc.h"
-#include "cgicc/HTTPHTMLHeader.h"
-#include "cgicc/HTMLClasses.h"
-
+#include "httplib.h"
 #include "PhoneBook.h"
 #include "PhoneEntry.h"
-
-#define XML_USE_STL
+const int port = 5004;
 
 using namespace std;
-using namespace cgicc; // Needed for AJAX functions.
 
 ofstream logfile; 
 
-int main() {
-  Cgicc cgi;    // Ajax object
-  char *cstr;
-
-  PhoneBook pb; // Phone Book SQL Interface Object
-  vector<PhoneEntry> pbResults;
-  
-  // Create AJAX objects to recieve information from web page.
-  form_iterator op = cgi.getElement("operation");
-  string operation = **op;
-  logfile.open("/home/fifo/skonphone.log",ios::out | ios::app);
-  logfile << "Op:" << operation << endl;
-  logfile.close();
-  string output = "Error = "+operation+ " - Operation not support yet!";
-  if (operation == "Find Last") {
-    form_iterator searchString = cgi.getElement("find");
-    string search = **searchString;
-    
-    pbResults = pb.findByLast(search);
-    if (pbResults.size() > 0) {
-      output = "success";
-      for (int i = 0; i<pbResults.size(); i++) {
-	output += "," + pbResults.at(i).first + ","
-	  + pbResults.at(i).last + ","
-	  + pbResults.at(i).phone + ","
-	  + pbResults.at(i).type + ","
-	  + pbResults.at(i).ID;
-      }
-    } else {
-      output = "No Match Found";
-    }
-  }
-
-  if (operation == "Find First") {
-    form_iterator searchString = cgi.getElement("find");
-    string search = **searchString;
-    
-    pbResults = pb.findByFirst(search);
-    if (pbResults.size() > 0) {
-      output = "success";
-      for (int i = 0; i<pbResults.size(); i++) {
-	output += "," + pbResults.at(i).first + ","
-	  + pbResults.at(i).last + ","
-	  + pbResults.at(i).phone + ","
-	  + pbResults.at(i).type + ","
-	  + pbResults.at(i).ID;
-      }
-    } else {
-      output = "No Match Found";
-    }
-  }
-  if (operation == "Find Type") {
-    form_iterator searchString = cgi.getElement("find");
-    string search = **searchString;
-    
-    pbResults = pb.findByType(search);
-    if (pbResults.size() > 0) {
-      output = "success";
-      for (int i = 0; i<pbResults.size(); i++) {
-	output += "," + pbResults.at(i).first + ","
-	  + pbResults.at(i).last + ","
-	  + pbResults.at(i).phone + ","
-	  + pbResults.at(i).type + ","
-	  + pbResults.at(i).ID;
-      }
-    } else {
-      output = "No Match Found";
-    }
-  }
-
-  if(operation=="Add Entry"){
-    form_iterator afnameString = cgi.getElement("afname");
-    form_iterator alnameString = cgi.getElement("alname");
-    form_iterator addphoneString = cgi.getElement("aphone");
-    form_iterator addtypeString = cgi.getElement("atype");
-
-    string addfname=**afnameString;
-    string addlname=**alnameString;
-    string addphone=**addphoneString;
-    string addtype=**addtypeString;
-
-    pb.addEntry(addfname,addlname,addphone,addtype);
-    output="success";
-  }
-  
-  if(operation=="delete"){
-    form_iterator idtodeleteString = cgi.getElement("deleteid");
-    string iddelete=**idtodeleteString;
-
-    pb.deleteEntry(iddelete);
-    output="success";
-  }
-  if(operation=="edit"){
-    form_iterator idtoeditString = cgi.getElement("editid");
-    string idedit=**idtoeditString;
-
-    form_iterator editfnameString = cgi.getElement("editfname");
-    form_iterator editlnameString = cgi.getElement("editlname");
-    form_iterator editphoneString = cgi.getElement("editphone");
-    form_iterator edittypeString = cgi.getElement("edittype");
-
-    string editfname=**editfnameString;
-    string editlname=**editlnameString;
-    string editphone=**editphoneString;
-    string edittype=**edittypeString;
-
-
-    pb.editEntry(idedit,editfname,editlname,editphone,edittype);
-    output="success";
-  }
-  
-  /* send back the results */
-  cout << "Content-Type: text/plain\n\n";
-
-  cout << output << endl;
-  
-  
-  return 0;
+string jsonResults(vector<PhoneEntry> pbList) {
+	string res = "{\"results\":[";
+	for (int i = 0; i<pbList.size(); i++) {
+		res += pbList[i].json();
+		if (i < pbList.size()-1) {
+			res +=",";
+		}
+	}
+	res += "]}";
+	return res;
 }
 
+int main() {
+	httplib::Server svr;
+
+  	PhoneBook pb; // Phone Book SQL Interface Object
+  
+  	vector<PhoneEntry> pbResults;
+
+  	svr.Get("/", [](const httplib::Request & /*req*/, httplib::Response &res) {
+    	res.set_header("Access-Control-Allow-Origin","*");
+    	res.set_content("Phone API", "text/plain");
+  	});
+  	
+  	svr.Get(R"(/phone/last/(.*))", [&](const httplib::Request& req, httplib::Response& res) {
+    	res.set_header("Access-Control-Allow-Origin","*");
+
+    	string last = req.matches[1];
+    	pbResults = pb.findByLast(last);
+    	string json = jsonResults(pbResults);
+    	res.set_content(json, "text/json");
+    	res.status = 200;
+  	});
+  	
+  	svr.Get(R"(/phone/first/(.*))", [&](const httplib::Request& req, httplib::Response& res) {
+    	res.set_header("Access-Control-Allow-Origin","*");
+
+    	string first = req.matches[1];
+    	pbResults = pb.findByFirst(first);
+    	string json = jsonResults(pbResults);
+    	res.set_content(json, "text/json");
+    	res.status = 200;
+  	});  	
+
+  	svr.Get(R"(/phone/type/(.*))", [&](const httplib::Request& req, httplib::Response& res) {
+    	res.set_header("Access-Control-Allow-Origin","*");
+
+    	string type = req.matches[1];
+    	pbResults = pb.findByType(type);
+    	string json = jsonResults(pbResults);
+    	res.set_content(json, "text/json");
+    	res.status = 200;
+  	});  
+  	
+  	svr.Get(R"(/phone/add/(.*)/(.*)/(.*)/(.*))", [&](const httplib::Request& req, httplib::Response& res) {
+    	res.set_header("Access-Control-Allow-Origin","*");
+
+    	string first = req.matches[1];
+    	string last = req.matches[2];
+    	string phone = req.matches[3];
+    	string type = req.matches[4];
+    	pb.addEntry(first,last,phone,type);
+
+    	res.set_content("{\"status\":\"success\"}", "text/json");
+    	res.status = 200;
+  	}); 	
+ 
+   	svr.Get(R"(/phone/update/(.*)/(.*)/(.*)/(.*)/(.*))", [&](const httplib::Request& req, httplib::Response& res) {
+    	res.set_header("Access-Control-Allow-Origin","*");
+
+    	string ID = req.matches[1];
+    	string first = req.matches[2];
+    	string last = req.matches[3];
+    	string phone = req.matches[4];
+    	string type = req.matches[5];
+    	pb.editEntry(ID,first,last,phone,type);
+
+    	res.set_content("{\"status\":\"success\"}", "text/json");
+    	res.status = 200;
+  	}); 
+
+  	svr.Get(R"(/phone/delete/(.*))", [&](const httplib::Request& req, httplib::Response& res) {
+    	res.set_header("Access-Control-Allow-Origin","*");
+
+    	string ID = req.matches[1];
+		pb.deleteEntry(ID);
+    	res.set_content("{\"status\":\"success\"}", "text/json");
+    	res.status = 200;
+  	});  
+  	 
+  	cout << "Server listening on port " << port << endl;
+  	svr.listen("0.0.0.0", port);
+
+}
