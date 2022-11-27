@@ -10,6 +10,7 @@ public:
      PhoneEntry();
      PhoneEntry(sql::SQLString f, sql::SQLString l, sql::SQLString p, sql::SQLString t,sql::SQLString I);
      string text();
+     string json();
      
      string first;
      string last;

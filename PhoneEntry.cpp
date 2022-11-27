@@ -20,3 +20,13 @@ string PhoneEntry::text() {
 	return result;
 
 }
+
+string PhoneEntry::json() {
+	string result = "{\"ID\":\"" + ID + "\",";
+	result += "\"first\":\"" + first + "\",";
+	result += "\"last\":\"" + last + "\",";
+	result += "\"phone\":\"" + phone + "\",";
+	result += "\"type\":\"" + type + "\"}";
+	return result;
+
+}
