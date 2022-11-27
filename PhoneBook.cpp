@@ -37,7 +37,7 @@ PhoneBook::PhoneBook() {
 
 vector<PhoneEntry> PhoneBook::findByLast(string last) {
 
-vector<PhoneEntry> list;
+	vector<PhoneEntry> list;
     
     // Make sure the connection is still valid
     if (!conn) {
@@ -65,93 +65,111 @@ vector<PhoneEntry> list;
 
 vector<PhoneEntry> PhoneBook::findByFirst(string first) {
 
-  // Establish Connection
-  std::unique_ptr<sql::Connection>  conn(driver->connect(db_url, properties));
+	vector<PhoneEntry> list;
+	
+    // Make sure the connection is still valid
+    if (!conn) {
+   		cerr << "Invalid database connection" << endl;
+   		exit (EXIT_FAILURE);
+   	}	
+    // Create a new Statement
+	std::unique_ptr<sql::Statement> stmnt(conn->createStatement());
     
-  if (!conn) {
-   	cerr << "Invalid database connection" << endl;
-   	exit (EXIT_FAILURE);
-  }
-   	
-  std::auto_ptr<sql::Statement> stmt(conn->createStatement());
-
-  vector<PhoneEntry> list;
-  stmt->execute("SELECT * FROM PhoneBook WHERE First like '%"+first+"%'");
-  std::auto_ptr< sql::ResultSet > res;
-  do {
-    res.reset(stmt->getResultSet());
+    // Execute query
+    sql::ResultSet *res = stmnt->executeQuery("SELECT * FROM PhoneBook WHERE First like '%"+first+"%'");
+    
+    // Loop through and print results
     while (res->next()) {
-      PhoneEntry entry(res->getString("First"),res->getString("Last"),
-		       res->getString("Phone"),res->getString("Type"),
-	res->getString("ID"));
-        list.push_back(entry);
+    	PhoneEntry entry(res->getString("First"),res->getString("Last"),
+			res->getString("Phone"),res->getString("Type"),
+	    	res->getString("ID"));
+	    	
+	    list.push_back(entry);
 
     }
-  } while (stmt->getMoreResults());
-  return list;
-
+    return list;
 }
 
 vector<PhoneEntry> PhoneBook::findByType(string type) {
-
-  // Establish Connection
-  std::unique_ptr<sql::Connection>  conn(driver->connect(db_url, properties));
+	vector<PhoneEntry> list;
+	
+    // Make sure the connection is still valid
+    if (!conn) {
+   		cerr << "Invalid database connection" << endl;
+   		exit (EXIT_FAILURE);
+   	}	
+    // Create a new Statement
+	std::unique_ptr<sql::Statement> stmnt(conn->createStatement());
     
-  if (!conn) {
-   	cerr << "Invalid database connection" << endl;
-   	exit (EXIT_FAILURE);
-  }
-   	
-  std::auto_ptr<sql::Statement> stmt(conn->createStatement());
-
-  vector<PhoneEntry> list;
-  stmt->execute("SELECT * FROM PhoneBook WHERE Type like '%"+type+"%'");
-  std::auto_ptr< sql::ResultSet > res;
-  do {
-    res.reset(stmt->getResultSet());
+    // Execute query
+    sql::ResultSet *res = stmnt->executeQuery("SELECT * FROM PhoneBook WHERE Type like '%"+type+"%'");
+    
+    // Loop through and print results
     while (res->next()) {
-      PhoneEntry entry(res->getString("First"),res->getString("Last"),
-		       res->getString("Phone"),res->getString("Type"),
-	res->getString("ID"));
-      list.push_back(entry);
+    	PhoneEntry entry(res->getString("First"),res->getString("Last"),
+			res->getString("Phone"),res->getString("Type"),
+	    	res->getString("ID"));
+	    	
+	    list.push_back(entry);
 
     }
-  } while (stmt->getMoreResults());
-  return list;
+    return list;
 
 }
 
 void PhoneBook::addEntry(string first,string last,string phone, string type){
-  // Establish Connection
-  std::unique_ptr<sql::Connection>  conn(driver->connect(db_url, properties));
-    
-  if (!conn) {
-   	cerr << "Invalid database connection" << endl;
-   	exit (EXIT_FAILURE);
-  }
-  std::auto_ptr<sql::Statement> stmt(conn->createStatement());
 
-  if(type != "Friend" && type != "Family" && type!="Business"){
-      type="Other";
-  }
-  stmt->execute("INSERT INTO PhoneBook(First,Last,Phone,Type) VALUES ('"+first+"','"+last+"','"+phone+"','"+type+"')");
+	if (!conn) {
+   		cerr << "Invalid database connection" << endl;
+   		exit (EXIT_FAILURE);
+  	}
+
+  	std::auto_ptr<sql::Statement> stmnt(conn->createStatement());
+
+  	if (type != "Friend" && type != "Family" && type!="Business"){
+     	 type="Other";
+  	}
+  	
+  	stmnt->executeQuery("INSERT INTO PhoneBook(First,Last,Phone,Type) VALUES ('"+first+"','"+last+"','"+phone+"','"+type+"')");
 }
 
+PhoneEntry PhoneBook::fetchEntry(string id){
+
+	PhoneEntry entry;	
+	
+	if (!conn) {
+   		cerr << "Invalid database connection" << endl;
+   		exit (EXIT_FAILURE);
+  	}
+
+  	std::auto_ptr<sql::Statement> stmnt(conn->createStatement());
+
+  	
+    sql::ResultSet *res = stmnt->executeQuery("SELECT * FROM PhoneBook WHERE ID = '"+id+"'");
+    
+    // Get first entry
+    if (res->next()) {
+    	entry = PhoneEntry(res->getString("First"),res->getString("Last"),
+			res->getString("Phone"),res->getString("Type"),
+	    	res->getString("ID"));
+    }
+    return entry;
+}
 
 void PhoneBook::editEntry(string idnum,string first,string last,string phone, string type){
-  // Establish Connection
-  std::unique_ptr<sql::Connection>  conn(driver->connect(db_url, properties));
-    
-  if (!conn) {
-   	cerr << "Invalid database connection" << endl;
-   	exit (EXIT_FAILURE);
-  }
-  std::auto_ptr<sql::Statement> stmt(conn->createStatement());
+	if (!conn) {
+   		cerr << "Invalid database connection" << endl;
+   		exit (EXIT_FAILURE);
+  	}
 
-  if(type != "Friend" && type != "Family" && type!="Business"){
-    type="Other";
-  }
-  stmt->execute("UPDATE PhoneBook SET First = '"+first+"', Last ='"+last+"', Phone ='"+phone+"', Type ='"+type+"' WHERE ID='"+idnum+"'");
+  	std::auto_ptr<sql::Statement> stmnt(conn->createStatement());
+
+  	if (type != "Friend" && type != "Family" && type!="Business"){
+     	 type="Other";
+  	}
+  	
+  	stmnt->executeQuery("UPDATE PhoneBook SET First = '"+first+"', Last ='"+last+"', Phone ='"+phone+"', Type ='"+type+"' WHERE ID='"+idnum+"'");
+  	
 }
 
 

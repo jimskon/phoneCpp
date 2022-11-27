@@ -1,3 +1,4 @@
+#include <mariadb/conncpp.hpp>
 #include <string>
 using namespace std;
 
@@ -8,6 +9,8 @@ class PhoneEntry {
 public:
      PhoneEntry();
      PhoneEntry(sql::SQLString f, sql::SQLString l, sql::SQLString p, sql::SQLString t,sql::SQLString I);
+     string text();
+     
      string first;
      string last;
      string phone;
