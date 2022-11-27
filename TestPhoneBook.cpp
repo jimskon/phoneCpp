@@ -32,12 +32,7 @@ int main(){
         pbResults = pb.findByFirst(firstMatch);
 
         for (int i = 0; i<pbResults.size(); i++) {
-        	cout << pbResults.at(i).ID << ". "
-               << pbResults.at(i).first << " "
-        	     << pbResults.at(i).last << " "
-        	     << pbResults.at(i).phone << " "
-        	     << pbResults.at(i).type
-        	     << endl;
+        	cout << pbResults[i].text() << endl;
         }
       } else if (o=='2') {
 
@@ -48,12 +43,7 @@ int main(){
         pbResults = pb.findByLast(lastMatch);
 
         for (int i = 0; i<pbResults.size(); i++) {
-          cout << pbResults.at(i).ID << ". "
-             << pbResults.at(i).first << " "
-        	   << pbResults.at(i).last << " "
-        	   << pbResults.at(i).phone << " "
-        	   << pbResults.at(i).type
-        	   << endl;
+			cout << pbResults[i].text() << endl;
         }
       } else if (o=='3') {
         cout << "Enter type to find:";
@@ -113,10 +103,10 @@ int main(){
       } else if (o=='6') {
 
         string IDnum;
-        cout << "Enter an ID number to delete";
+        cout << "Enter an ID number to delete: ";
         cin >> IDnum;
         pb.deleteEntry(IDnum);
-        cout << "Attempted delete";
+        cout << "Deleted!" << endl;
       }
       cout << "Seect an option (1-serach first, 2-search last, 3-search type, 4-add, 5-edit, 6-delete, 7-end): ";
       cin >> o;
