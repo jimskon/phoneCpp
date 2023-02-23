@@ -29,6 +29,7 @@ using namespace std;
 class PhoneBook {
 public:
     PhoneBook();
+    vector<PhoneEntry> find(string search);
     vector<PhoneEntry> findByFirst(string first);
     vector<PhoneEntry> findByLast(string last);
     vector<PhoneEntry> findByType(string type);

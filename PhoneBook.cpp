@@ -34,6 +34,36 @@ PhoneBook::PhoneBook() {
    	
 }
 
+vector<PhoneEntry> PhoneBook::find(string search) {
+
+	vector<PhoneEntry> list;
+    
+    // Make sure the connection is still valid
+    if (!conn) {
+   		cerr << "Invalid database connection" << endl;
+   		exit (EXIT_FAILURE);
+   	}	
+    // Create a new Statement
+	std::unique_ptr<sql::Statement> stmnt(conn->createStatement());
+    
+    // Execute query
+    sql::ResultSet *res = stmnt->executeQuery(
+			"SELECT * FROM PhoneBook WHERE Last like '%"+search+"%' OR "+
+    		 + "First like '%"+search+"%' OR " +
+    		 + "Type like '%"+search+"%'");
+    
+    // Loop through and print results
+    while (res->next()) {
+    	PhoneEntry entry(res->getString("First"),res->getString("Last"),
+			res->getString("Phone"),res->getString("Type"),
+	    	res->getString("ID"));
+	    	
+	    list.push_back(entry);
+
+    }
+    return list;
+
+}
 
 vector<PhoneEntry> PhoneBook::findByLast(string last) {
 

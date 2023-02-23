@@ -41,12 +41,24 @@ int main() {
     	res.set_content("Phone API", "text/plain");
   	});
   	
+  	svr.Get(R"(/phone/find/(.*))", [&](const httplib::Request& req, httplib::Response& res) {
+    	res.set_header("Access-Control-Allow-Origin","*");
+
+    	string last = req.matches[1];
+    	pbResults = pb.find(last);
+    	string json = jsonResults(pbResults);
+    	cout << "Last: " << json << endl;
+    	res.set_content(json, "text/json");
+    	res.status = 200;
+  	});
+  	
   	svr.Get(R"(/phone/last/(.*))", [&](const httplib::Request& req, httplib::Response& res) {
     	res.set_header("Access-Control-Allow-Origin","*");
 
     	string last = req.matches[1];
     	pbResults = pb.findByLast(last);
     	string json = jsonResults(pbResults);
+    	cout << "Last: " << json << endl;
     	res.set_content(json, "text/json");
     	res.status = 200;
   	});
@@ -57,6 +69,7 @@ int main() {
     	string first = req.matches[1];
     	pbResults = pb.findByFirst(first);
     	string json = jsonResults(pbResults);
+    	cout << "first: " << json << endl;
     	res.set_content(json, "text/json");
     	res.status = 200;
   	});  	
@@ -67,6 +80,7 @@ int main() {
     	string type = req.matches[1];
     	pbResults = pb.findByType(type);
     	string json = jsonResults(pbResults);
+    	cout << "type: " << json << endl;
     	res.set_content(json, "text/json");
     	res.status = 200;
   	});  
